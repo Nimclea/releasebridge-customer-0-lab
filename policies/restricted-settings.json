@@ -1,0 +1,9 @@
+{
+  "schema": "CUSTOMER0_TEST_POLICY_V1",
+  "environment": "first-party-public-lab",
+  "allow_external_payments": false,
+  "allow_external_notifications": false,
+  "allow_broad_repo_writes": false,
+  "case_retention": "preserve-original-case",
+  "note": "Test input only, not a deployed ReleaseBridge authorization grant."
+}

@@ -1,0 +1,368 @@
+{
+  "schema": "RB_CUSTOMER0_12_PLUS_2_PLAN_V2",
+  "repository": "Nimclea/releasebridge-customer-0-lab",
+  "scenario_targets_only": true,
+  "protection_installed": false,
+  "cases": [
+    {
+      "id": "R01",
+      "sequence": 1,
+      "claim_id": "RB0-R01-RETRY-COUNT",
+      "title": "Retry 次数精确执行",
+      "source_path": "src/shipping.mjs",
+      "symbol": "retryAttempts",
+      "oracle": "test/claims/R01.test.mjs",
+      "first_decision_target": "PASS",
+      "route_target": "AUTO_PROTECT",
+      "expected_protected_count_after_success": 1,
+      "requirement": "requested 为 3/1/0 时分别得到 3/1/0；负数与小数继续拒绝。",
+      "condition_to_exercise": "原 Agent 完成范围内修复、当前精确 Candidate 的验收证据齐备。",
+      "recovery_to_exercise": "无额外人工冻结操作。满足产品规则后自动新增保护 R01。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/shipping.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R02",
+      "sequence": 2,
+      "claim_id": "RB0-R02-LINE-TOTAL",
+      "title": "订单行数量计价",
+      "source_path": "src/pricing.mjs",
+      "symbol": "lineTotalCents",
+      "oracle": "test/claims/R02.test.mjs",
+      "first_decision_target": "PASS",
+      "route_target": "AUTO_PROTECT",
+      "expected_protected_count_after_success": 2,
+      "requirement": "单价以整数分计，合计等于单价乘数量；不丢失数量且不放宽输入约束。",
+      "condition_to_exercise": "在 R01 已有真实保护后提交该合法修复。",
+      "recovery_to_exercise": "R02 自动保护，同时 R01 继续有效。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/pricing.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R03",
+      "sequence": 3,
+      "claim_id": "RB0-R03-SKU-NORMALIZATION",
+      "title": "SKU 规范化一致",
+      "source_path": "src/orders.mjs",
+      "symbol": "normalizeSku",
+      "oracle": "test/claims/R03.test.mjs",
+      "first_decision_target": "PASS",
+      "route_target": "AUTO_PROTECT",
+      "expected_protected_count_after_success": 3,
+      "requirement": "去掉首尾空格并统一大写；非法 SKU 仍拒绝。",
+      "condition_to_exercise": "在 R01/R02 保护有效时提交该合法修复。",
+      "recovery_to_exercise": "新增 R03；原有保护不重装、不替换成最新一份。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/orders.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R04",
+      "sequence": 4,
+      "claim_id": "RB0-R04-RETRY-CAP",
+      "title": "重试退避上限",
+      "source_path": "src/shipping.mjs",
+      "symbol": "retryDelayMs",
+      "oracle": "test/claims/R04.test.mjs",
+      "first_decision_target": "UNKNOWN",
+      "route_target": "WAIT_FOR_EVIDENCE",
+      "expected_protected_count_after_success": 4,
+      "requirement": "指数退避不能超过 capMs；首次等待、0 上限和非法参数均保持明确语义。",
+      "condition_to_exercise": "代码修复后，让真实必要 CI 尚未完成时被产品观察；不伪造 API 响应或测试结果。可由已审核的延迟证据作业形成窗口。",
+      "recovery_to_exercise": "自动等待真实 Check 完成并重新判断同一 SHA，不要求客户点批准；新增 R04。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/shipping.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R05",
+      "sequence": 5,
+      "claim_id": "RB0-R05-TAX-POLICY",
+      "title": "税额舍入业务选择",
+      "source_path": "src/pricing.mjs",
+      "symbol": "taxCents",
+      "oracle": "test/claims/R05.test.mjs",
+      "first_decision_target": "UNKNOWN",
+      "route_target": "HUMAN_DECISION",
+      "expected_protected_count_after_success": 5,
+      "requirement": "per-line 与 per-invoice 均有定义；实现须尊重选定方式，不能替客户默认决定当前业务规则。",
+      "condition_to_exercise": "两种算法可都通过代码测试，但该订单采用哪种规则没有产品 Owner 决策。测试两种算法不等于作了客户选择。",
+      "recovery_to_exercise": "真实人类待决入口提供二选一、稍后、取消；先稍后，再回同一 Case 作选择；核验当前 SHA 后自动保护 R05。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/pricing.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R06",
+      "sequence": 6,
+      "claim_id": "RB0-R06-CANCELLED-TERMINAL",
+      "title": "已取消订单不能复活",
+      "source_path": "src/orders.mjs",
+      "symbol": "canTransition",
+      "oracle": "test/claims/R06.test.mjs",
+      "first_decision_target": "UNKNOWN",
+      "route_target": "REFRESH_CURRENT_EVIDENCE",
+      "expected_protected_count_after_success": 6,
+      "requirement": "cancelled 为终态；其他既定合法状态转换不变。",
+      "condition_to_exercise": "同一 PR 的 Candidate A 有真实测试，随后出现 Candidate B；只拿到 A 的绿灯不能接受 B。无需伪造签名。",
+      "recovery_to_exercise": "丢弃对 B 不适用的旧证据，自动取得 B 的验证；同一 Case 继续，新增 R06。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/orders.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R07",
+      "sequence": 7,
+      "claim_id": "RB0-R07-REFUND-BALANCE",
+      "title": "退款不超过剩余额度",
+      "source_path": "src/payments.mjs",
+      "symbol": "canRefund",
+      "oracle": "test/claims/R07.test.mjs",
+      "first_decision_target": "UNKNOWN",
+      "route_target": "HUMAN_SCOPE_DECISION",
+      "expected_protected_count_after_success": 7,
+      "requirement": "requested 不超过 captured-refunded；已退款额和非法历史都纳入检查。",
+      "condition_to_exercise": "最初任务只允许查看订单层，Agent 在修改 payments.mjs 之前发现需扩展范围；尚未发生已确认越权，因此是 UNKNOWN。",
+      "recovery_to_exercise": "客户通过真实入口批准该文件和该任务的有界扩展，Agent 再修复；复验后新增 R07。未批准不得写入。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/payments.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R08",
+      "sequence": 8,
+      "claim_id": "RB0-R08-BUSINESS-DELIVERY",
+      "title": "工作日送达日期",
+      "source_path": "src/shipping.mjs",
+      "symbol": "deliveryDate",
+      "oracle": "test/claims/R08.test.mjs",
+      "first_decision_target": "DENY",
+      "route_target": "REPAIR_REGRESSION",
+      "expected_protected_count_after_success": 8,
+      "requirement": "从次日开始计算工作日，周六周日跳过；0 天不移动，非法日期拒绝。",
+      "condition_to_exercise": "首个负控 Candidate 修好 deliveryDate 却使 R01 的 retryAttempts(3) 再次返回 2；真实回归测试和原有保护必须识别。",
+      "recovery_to_exercise": "原 Agent 自动收到失败证据和保留 R01/R04 的约束，回到同一 Case 重修；复验并合法迁移共享文件基线后新增 R08。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/shipping.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R09",
+      "sequence": 9,
+      "claim_id": "RB0-R09-DISCOUNT-FLOOR",
+      "title": "折扣后金额不能为负",
+      "source_path": "src/pricing.mjs",
+      "symbol": "discountedTotalCents",
+      "oracle": "test/claims/R09.test.mjs",
+      "first_decision_target": "DENY",
+      "route_target": "REPAIR_FORBIDDEN_PATH",
+      "expected_protected_count_after_success": 9,
+      "requirement": "折扣最多减至 0；正常折扣与非法输入约束保留。",
+      "condition_to_exercise": "首个负控 Candidate 同时修改禁止路径 policies/restricted-settings.json；只用实验布尔字段，不使用真实凭据。",
+      "recovery_to_exercise": "拒绝该 Candidate，原 Agent 撤销越界变化、保留合法修复和已有 R02/R05；复验后新增 R09。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/pricing.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R10",
+      "sequence": 10,
+      "claim_id": "RB0-R10-STOCK-AGGREGATION",
+      "title": "重复 SKU 的库存合并扣减",
+      "source_path": "src/orders.mjs",
+      "symbol": "reserveBatch",
+      "oracle": "test/claims/R10.test.mjs",
+      "first_decision_target": "DENY",
+      "route_target": "REPAIR_FAILED_CONTRACT",
+      "expected_protected_count_after_success": 10,
+      "requirement": "同一 SKU 多行按合计扣减，库存不足整体拒绝，输入库存对象不被部分写坏。",
+      "condition_to_exercise": "首个修复只覆盖一行请求，但重复 SKU 测试真实失败。",
+      "recovery_to_exercise": "自动返回原 Agent，带上重复行的失败输入及现有通过项；不得删测试；重修后新增 R10。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/orders.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R11",
+      "sequence": 11,
+      "claim_id": "RB0-R11-PAYMENT-IDEMPOTENCY",
+      "title": "重复支付事件不重复入账",
+      "source_path": "src/payments.mjs",
+      "symbol": "applyPayment",
+      "oracle": "test/claims/R11.test.mjs",
+      "first_decision_target": "DENY",
+      "route_target": "REPAIR_QUALIFIED_COUNTEREXAMPLE",
+      "expected_protected_count_after_success": 11,
+      "requirement": "同一 id、同一金额幂等；同一 id 不同金额是冲突，不能静默吞掉；输入 ledger 不变。",
+      "condition_to_exercise": "首个修复把相同 id 一律忽略，普通重复通过，但不同金额重复的可执行反证确认失败。",
+      "recovery_to_exercise": "把反证交回原 Agent，保留幂等修复并增加冲突拒绝；复验后新增 R11。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/payments.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    },
+    {
+      "id": "R12",
+      "sequence": 12,
+      "claim_id": "RB0-R12-PARTIAL-PAYMENT",
+      "title": "支付状态识别部分到账",
+      "source_path": "src/payments.mjs",
+      "symbol": "paymentState",
+      "oracle": "test/claims/R12.test.mjs",
+      "first_decision_target": "DENY",
+      "route_target": "SECURITY_STOP_AND_AUTHORIZED_RECOVERY",
+      "expected_protected_count_after_success": 12,
+      "requirement": "0 实付为 unpaid，0<实付<总额为 partial，已足额为 paid；0 总额无需付款。",
+      "condition_to_exercise": "代码可正确，但向真实证据消费者提交另一 Candidate 的证据引用；SHA 不匹配为已知冲突。禁止伪造真实身份或获取额外权限。",
+      "recovery_to_exercise": "安全拒绝这份证据，不自动交给不可信执行者重试；Owner 在原 Case 处理来源问题，选择已授权的可信执行者/重新取得正确版本证据；复验后新增 R12。",
+      "actual_decision": null,
+      "actual_candidate_sha": null,
+      "actual_case_id": null,
+      "active_protection_ref": null,
+      "record_status": "NOT_RUN",
+      "normal_allowed_source_paths": [
+        "src/payments.mjs"
+      ],
+      "forbidden_paths": [
+        ".github/",
+        "test/",
+        "tools/",
+        "acceptance/",
+        "policies/restricted-settings.json"
+      ]
+    }
+  ]
+}

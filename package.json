@@ -1,0 +1,15 @@
+{
+  "name": "releasebridge-customer-0-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "First-party 12-repair cumulative protection acceptance lab. Not a ReleaseBridge implementation.",
+  "engines": {"node": ">=20"},
+  "scripts": {
+    "test": "node tools/lab.mjs smoke",
+    "lab:baseline": "node tools/lab.mjs baseline",
+    "lab:inventory": "node tools/lab.mjs inventory",
+    "lab:all": "node tools/lab.mjs check --through R12",
+    "demo": "node src/demo.mjs"
+  }
+}
