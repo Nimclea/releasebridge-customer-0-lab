@@ -1,0 +1,11 @@
+{
+  "schema": "RELEASEBRIDGE_PR_FREEZE_POLICY_V1",
+  "repo": "Nimclea/releasebridge-customer-0-lab",
+  "base_ref": "main",
+  "protected_paths": [
+    {
+      "path": "src/shared.mjs",
+      "blob": "771e7271f512fb105566c06413b2e249d2221317"
+    }
+  ]
+}
