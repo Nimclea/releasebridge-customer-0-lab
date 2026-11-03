@@ -7,3 +7,5 @@ export function positiveInteger(value, name = 'value') {
   if (value === 0) throw new RangeError(name + ' must be positive');
   return value;
 }
+
+// Isolated Ruleset 26495460 negative control; never merge.
