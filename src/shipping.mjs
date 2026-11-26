@@ -2,7 +2,7 @@ import { nonnegativeInteger, positiveInteger } from './shared.mjs';
 
 export function retryAttempts(requested) {
   nonnegativeInteger(requested, 'requested');
-  return Math.max(0, requested - 1);
+  return requested;
 }
 
 export function retryDelayMs(attempt, initialMs, capMs) {
