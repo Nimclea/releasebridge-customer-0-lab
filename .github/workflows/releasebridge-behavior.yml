@@ -1,0 +1,69 @@
+name: ReleaseBridge Behavior Protection
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  releasebridge-behavior:
+    name: releasebridge-behavior
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # pull_request_target loads this workflow from the trusted base revision.
+      # PR-head files are fetched only as data; candidate workflows are never run.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Start dedicated non-root Docker daemon
+        id: isolation-daemon
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y uidmap slirp4netns fuse-overlayfs docker-ce-rootless-extras
+          command -v dockerd-rootless.sh
+          command -v newuidmap
+          command -v newgidmap
+          runner_uid="$(id -u)"
+          runner_gid="$(id -g)"
+          if ! id rb-behavior-sandbox >/dev/null 2>&1; then
+            sudo useradd --create-home --home-dir /home/rb-behavior-sandbox --shell /usr/sbin/nologin rb-behavior-sandbox
+          fi
+          sandbox_uid="$(id -u rb-behavior-sandbox)"
+          if ! grep -q '^rb-behavior-sandbox:' /etc/subuid; then sudo usermod --add-subuids 231072-296607 rb-behavior-sandbox; fi
+          if ! grep -q '^rb-behavior-sandbox:' /etc/subgid; then sudo usermod --add-subgids 231072-296607 rb-behavior-sandbox; fi
+          sudo install -d -o "$sandbox_uid" -g "$sandbox_uid" -m 0700 "/run/user/$sandbox_uid"
+          sudo -u rb-behavior-sandbox env HOME=/home/rb-behavior-sandbox XDG_RUNTIME_DIR="/run/user/$sandbox_uid" PATH=/usr/bin:/bin dockerd-rootless.sh >"$RUNNER_TEMP/rb-rootless-dockerd.log" 2>&1 &
+          for attempt in $(seq 1 60); do
+            if [ -S "/run/user/$sandbox_uid/docker.sock" ]; then break; fi
+            sleep 1
+          done
+          test -S "/run/user/$sandbox_uid/docker.sock"
+          sudo chgrp "$runner_gid" "/run/user/$sandbox_uid"
+          sudo chmod 0710 "/run/user/$sandbox_uid"
+          sudo chgrp "$runner_gid" "/run/user/$sandbox_uid/docker.sock"
+          sudo chmod 0660 "/run/user/$sandbox_uid/docker.sock"
+          test "$sandbox_uid" != "$runner_uid"
+          export XDG_RUNTIME_DIR="/run/user/$sandbox_uid"
+          export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
+          security_options="$(docker info --format '{{json .SecurityOptions}}')"
+          grep -q 'name=rootless' <<<"$security_options"
+          grep -q 'name=seccomp,profile=builtin' <<<"$security_options"
+          printf 'RB_SANDBOX_UID=%s\n' "$sandbox_uid" >> "$GITHUB_ENV"
+          printf 'XDG_RUNTIME_DIR=%s\n' "$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          printf 'DOCKER_HOST=%s\n' "$DOCKER_HOST" >> "$GITHUB_ENV"
+      - name: Verify accepted behavior claims
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          RB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RB_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          RB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          RB_ACCEPTANCE_PUBLIC_KEY: ${{ secrets.RB_ACCEPTANCE_PUBLIC_KEY }}
+        run: node .releasebridge/behavior-check.cjs
